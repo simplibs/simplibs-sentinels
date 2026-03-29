@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simplibs-sentinels"
+version = "0.1.0"
+description = "Sentinel values shared across the simplibs ecosystem."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+keywords = [
+    "sentinel",
+    "unset",
+    "missing",
+    "simplibs",
+    "developer-tools",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[[project.authors]]
+name = "Dalibor Sova (Sudip2708)"
+email = "daliborsova@seznam.cz"
+
+[project.urls]
+Homepage = "https://github.com/simplibs/simplibs-sentinels"
+Repository = "https://github.com/simplibs/simplibs-sentinels"
+Issues = "https://github.com/simplibs/simplibs-sentinels/issues"
+Changelog = "https://github.com/simplibs/simplibs-sentinels/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-v"
+
+[tool.setuptools.packages.find]
+where = ["src"]
