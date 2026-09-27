@@ -1,4 +1,5 @@
 from typing import Final
+
 from .base import SentinelType
 
 
@@ -10,30 +11,92 @@ class DefaultType(SentinelType):
 
 
 DEFAULT: Final = DefaultType()
+"""
+Sentinel representing an explicit request for default behaviour.
+
+`DEFAULT` is used when a caller wants to distinguish an explicit request
+for the normal/default behaviour from simply not providing a value.
+
+For example:
+
+```python
+def render(color: str | DefaultType = DEFAULT):
+    if color is DEFAULT:
+        color = theme.primary_color
+```
+
+The distinction is particularly useful when the default value is resolved
+dynamically at runtime rather than being a fixed function default.
+
+Use `UNSET` when the caller did not provide a value.
+Use `DEFAULT` when the caller explicitly requests the default behaviour.
+
+Always test the sentinel by identity:
+
+```python
+value is DEFAULT
+```
+"""
 
 
 _DESIGN_NOTES = """
 # DefaultType / DEFAULT
 
 ## Purpose
-Sentinel for explicitly expressing "I want the default behaviour" — distinct
-from a parameter that was simply not provided (`UNSET`) or is absent (`MISSING`).
 
-## When to use
+`DEFAULT` represents an explicit request for default behaviour.
+
+It is intentionally different from `UNSET`:
+
+- `UNSET` → no value was provided;
+- `DEFAULT` → the caller explicitly requested default behaviour.
+
+This distinction is useful when an API needs to distinguish omission from
+an explicit request to fall back to its normal behaviour.
+
+## Example
+
 ```python
-from simplibs.sentinels import DEFAULT, DefaultType
-
 def render(color: str | DefaultType = DEFAULT):
     if color is DEFAULT:
-        color = theme.primary_color  # default explicitly requested
+        color = theme.primary_color
 ```
 
-## Difference from UNSET
-`UNSET` means "the user provided nothing".
-`DEFAULT` means "the user explicitly wants the default value" — even when
-that default is not static but resolved dynamically at runtime.
+The default may also be calculated dynamically:
+
+```python
+if color is DEFAULT:
+    color = resolve_default_color()
+```
+
+Therefore `DEFAULT` does not necessarily represent a particular value.
+It represents an instruction about how the value should be resolved.
+
+## Relationship with UNSET
+
+These two sentinels deliberately represent different states:
+
+| Sentinel | Meaning |
+|----------|---------|
+| `UNSET` | No value was supplied |
+| `DEFAULT` | Default behaviour was explicitly requested |
+
+This distinction is one of the main reasons both sentinels exist.
+
+## Implementation
+
+`DEFAULT` is implemented by `DefaultType`, which inherits from
+`SentinelType`.
+
+Unlike `EMPTY`, it is not adopted from an external library. It is a
+simplibs-owned semantic concept, so simplibs creates and owns its singleton
+instance.
 
 ## Notes
-- Always compare using `is`, never `==`.
-- `bool(DEFAULT)` returns `False` — DEFAULT is falsy.
+
+- `DEFAULT` is a singleton.
+- `bool(DEFAULT)` is `False`.
+- Always compare it using `is`.
+- `Final` documents that the public constant itself is not intended to be
+  reassigned.
 """

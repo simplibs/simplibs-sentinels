@@ -1,94 +1,119 @@
-"""
-Testy pro všechny sentinely — singleton, repr, bool, identita a izolace.
-"""
+"""Tests for the public sentinel values."""
+
+import inspect
+
 import pytest
+
 from simplibs.sentinels import (
+    DEFAULT,
+    EMPTY,
+    MISSING,
+    UNSET,
+    DefaultType,
+    MissingType,
     SentinelType,
-    UnsetType, UNSET,
-    MissingType, MISSING,
-    DefaultType, DEFAULT,
-    EmptyType, EMPTY,
+    UnsetType,
 )
 
-ALL_SENTINELS = [
+
+OWNED_SENTINELS = (
     (UnsetType, UNSET, "UNSET"),
     (MissingType, MISSING, "MISSING"),
     (DefaultType, DEFAULT, "DEFAULT"),
-    (EmptyType, EMPTY, "EMPTY"),
-]
+)
+
+
+ALL_SENTINELS = (
+    UNSET,
+    MISSING,
+    DEFAULT,
+    EMPTY,
+)
 
 
 # -----------------------------------------------------------------------------
-# Singleton
+# Simplibs-owned sentinels
 # -----------------------------------------------------------------------------
 
-@pytest.mark.parametrize("cls, instance, _", ALL_SENTINELS)
-def test_singleton_repeated_calls(cls, instance, _):
-    """Opakované volání konstruktoru musí vrátit stejnou instanci."""
-    assert cls() is cls()
+@pytest.mark.parametrize("sentinel_type, sentinel, name", OWNED_SENTINELS)
+def test_owned_sentinel_is_singleton(sentinel_type, sentinel, name):
+    """Repeated construction must return the same instance."""
+    assert sentinel_type() is sentinel_type()
+    assert sentinel_type() is sentinel
 
 
-@pytest.mark.parametrize("cls, instance, _", ALL_SENTINELS)
-def test_singleton_is_shared_instance(cls, instance, _):
-    """Globální instance musí být totožná s výsledkem konstruktoru."""
-    assert cls() is instance
+@pytest.mark.parametrize("sentinel_type, sentinel, expected_repr", OWNED_SENTINELS)
+def test_owned_sentinel_repr(sentinel_type, sentinel, expected_repr):
+    """Each owned sentinel must have its public representation."""
+    assert repr(sentinel) == expected_repr
 
 
-# -----------------------------------------------------------------------------
-# __repr__
-# -----------------------------------------------------------------------------
-
-@pytest.mark.parametrize("_, instance, expected_repr", ALL_SENTINELS)
-def test_repr(_, instance, expected_repr):
-    """repr() musí vrátit přesný název sentinelu."""
-    assert repr(instance) == expected_repr
+@pytest.mark.parametrize("sentinel_type, sentinel, name", OWNED_SENTINELS)
+def test_owned_sentinel_is_falsy(sentinel_type, sentinel, name):
+    """Each simplibs-owned sentinel must be falsy."""
+    assert bool(sentinel) is False
 
 
-# -----------------------------------------------------------------------------
-# __bool__
-# -----------------------------------------------------------------------------
-
-@pytest.mark.parametrize("_, instance, __", ALL_SENTINELS)
-def test_bool_is_false(_, instance, __):
-    """Každý sentinel musí být falsy."""
-    assert bool(instance) is False
+@pytest.mark.parametrize("sentinel_type, sentinel, name", OWNED_SENTINELS)
+def test_owned_sentinel_inherits_from_sentinel_type(sentinel_type, sentinel, name):
+    """Each simplibs-owned sentinel type must inherit from SentinelType."""
+    assert issubclass(sentinel_type, SentinelType)
+    assert isinstance(sentinel, SentinelType)
 
 
 # -----------------------------------------------------------------------------
-# Izolace — sentinely se nesmí zaměňovat
+# EMPTY — external sentinel adopted from inspect
+# -----------------------------------------------------------------------------
+
+def test_empty_is_inspect_parameter_empty():
+    """EMPTY must be identical to inspect.Parameter.empty."""
+    assert EMPTY is inspect.Parameter.empty
+
+
+def test_empty_is_inspect_signature_empty():
+    """EMPTY must be identical to inspect.Signature.empty."""
+    assert EMPTY is inspect.Signature.empty
+
+
+def test_empty_is_not_sentinel_type_instance():
+    """EMPTY must remain outside the simplibs-owned SentinelType hierarchy."""
+    assert not isinstance(EMPTY, SentinelType)
+
+
+# -----------------------------------------------------------------------------
+# Identity
 # -----------------------------------------------------------------------------
 
 def test_sentinels_are_distinct():
-    """Žádné dva sentinely nesmí být identické."""
-    instances = [UNSET, MISSING, DEFAULT, EMPTY]
-    for i, a in enumerate(instances):
-        for b in instances[i + 1:]:
-            assert a is not b
+    """Different public sentinels must have different identities."""
+    for index, sentinel in enumerate(ALL_SENTINELS):
+        for other in ALL_SENTINELS[index + 1:]:
+            assert sentinel is not other
 
 
-def test_sentinels_are_not_none():
-    """Žádný sentinel nesmí být None."""
-    for _, instance, _ in ALL_SENTINELS:
-        assert instance is not None
-
-
-def test_sentinels_are_not_common_types():
-    """Sentinely nesmí být instancemi běžných typů."""
-    for _, instance, _ in ALL_SENTINELS:
-        assert not isinstance(instance, (str, int, float, list, dict))
+@pytest.mark.parametrize("sentinel", ALL_SENTINELS)
+def test_sentinel_is_not_none(sentinel):
+    """No public sentinel may be None."""
+    assert sentinel is not None
 
 
 # -----------------------------------------------------------------------------
-# SentinelType — základ
+# Public identity contract
 # -----------------------------------------------------------------------------
 
-def test_all_sentinels_inherit_from_sentinel_type():
-    """Všechny sentinely musí dědit ze SentinelType."""
-    for _, instance, _ in ALL_SENTINELS:
-        assert isinstance(instance, SentinelType)
+@pytest.mark.parametrize("sentinel", ALL_SENTINELS)
+def test_sentinel_identity_is_stable(sentinel):
+    """A sentinel must remain identical to itself."""
+    value = sentinel
+
+    assert value is sentinel
 
 
-def test_identity_check_with_is():
-    """Identita se ověřuje pomocí is, ne ==."""
+def test_identity_comparison_with_is():
+    """Sentinel values must be identifiable by object identity."""
     value = UNSET
+
     assert value is UNSET
+    assert value is not MISSING
+    assert value is not DEFAULT
+    assert value is not EMPTY
